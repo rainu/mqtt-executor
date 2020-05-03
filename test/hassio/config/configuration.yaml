@@ -1,0 +1,8 @@
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+
+mqtt:
+  broker: mqtt-broker
+  port: 1883
+  discovery: true
+  discovery_prefix: homeassistant

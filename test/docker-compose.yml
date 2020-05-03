@@ -1,0 +1,21 @@
+version: '3.7'
+
+services:
+  hassio:
+    build:
+      context: ./hassio/
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - 8123:8123
+    depends_on:
+      - mqtt-broker
+    restart: on-failure
+
+  mqtt-broker:
+    build:
+      context: ./mosquitto/
+    ports:
+      - 1883:1883
+      - 9002:9002
+    restart: on-failure

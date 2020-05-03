@@ -1,7 +1,17 @@
 # mqtt-executor
 
+![Go](https://github.com/rainu/mqtt-executor/workflows/Go/badge.svg)
+
 A simple MQTT client written in go that subscribes to a configurable list of MQTT topics on the specified broker and 
 executes a given shell script/command whenever a message arrives.
+
+# Get the Binary
+You can build it on your own (you will need [golang](https://golang.org/) installed):
+```bash
+go build -a -installsuffix cgo ./cmd/mqtt-executor/
+```
+
+Or if you are **logged in** at github, you can download the pre-build artifacts: [here](https://github.com/rainu/mqtt-executor/actions?query=is%3Asuccess+branch%3Amaster)
 
 # Configuration
 Create a configuration file named "config.json"
