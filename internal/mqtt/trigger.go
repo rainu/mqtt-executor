@@ -34,10 +34,12 @@ type Trigger struct {
 func (t *Trigger) Initialise(subscribeQOS, publishQOS byte, triggerConfigs []config.Trigger) {
 	t.publishQOS = publishQOS
 	t.runningCommands = map[string]context.CancelFunc{}
+	t.triggerConfigs = triggerConfigs //safe the configs so that we can unsubscribe later (see Close func)
 
 	for _, triggerConf := range triggerConfigs {
-		t.triggerConfigs = append(t.triggerConfigs, triggerConf)
 		t.MqttClient.Subscribe(triggerConf.Topic, subscribeQOS, t.createTriggerHandler(triggerConf))
+
+		//publish the stopped state on startup
 		t.publishStatus(triggerConf.Topic, PayloadStatusStopped)
 	}
 }
@@ -53,6 +55,7 @@ func (t *Trigger) createTriggerHandler(triggerConfig config.Trigger) MQTT.Messag
 
 		switch action {
 		case PayloadStart:
+			//ensure that only one trigger runs at the same time
 			if t.isCommandRunning(triggerConfig) {
 				zap.L().Warn("Command is already running. Skip execution!", zap.String("trigger", triggerConfig.Name))
 				return
@@ -61,17 +64,19 @@ func (t *Trigger) createTriggerHandler(triggerConfig config.Trigger) MQTT.Messag
 			go t.executeCommand(message.Topic(), triggerConfig)
 		case PayloadStop:
 			if !t.isCommandRunning(triggerConfig) {
+				//no command running -> no action
 				return
 			}
 			t.interruptCommand(triggerConfig)
 			t.unregisterCommand(triggerConfig)
 		default:
-			zap.L().Warn("Invalid payload")
+			zap.L().Warn("Invalid payload. Do nothing.")
 		}
 	}
 }
 
 func (t *Trigger) isCommandRunning(trigger config.Trigger) bool {
+	//we only need read access
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
@@ -80,6 +85,7 @@ func (t *Trigger) isCommandRunning(trigger config.Trigger) bool {
 }
 
 func (t *Trigger) registerCommand(trigger config.Trigger) context.Context {
+	//we need write access
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
@@ -90,6 +96,7 @@ func (t *Trigger) registerCommand(trigger config.Trigger) context.Context {
 }
 
 func (t *Trigger) unregisterCommand(trigger config.Trigger) {
+	//we need write access
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
@@ -97,6 +104,7 @@ func (t *Trigger) unregisterCommand(trigger config.Trigger) {
 }
 
 func (t *Trigger) interruptCommand(trigger config.Trigger) {
+	//we only need read access
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
@@ -105,22 +113,25 @@ func (t *Trigger) interruptCommand(trigger config.Trigger) {
 }
 
 func (t *Trigger) executeCommand(topic string, trigger config.Trigger) {
-	ctx := t.registerCommand(trigger)
-	defer t.unregisterCommand(trigger)
+	ctx := t.registerCommand(trigger)  //register at begin
+	defer t.unregisterCommand(trigger) //unregister at end
 
-	t.publishStatus(topic, PayloadStatusRunning)
-	defer t.publishStatus(topic, PayloadStatusStopped)
+	t.publishStatus(topic, PayloadStatusRunning)       //publish that we are now running
+	defer t.publishStatus(topic, PayloadStatusStopped) //at the end we are stopped
 
 	output, execErr := t.Executor.ExecuteCommandWithContext(trigger.Command.Name, trigger.Command.Arguments, ctx)
 	if execErr != nil {
 		if execErr == context.Canceled {
+			//this can happen if a STOPPED-Message was incoming or the application is shutting down
 			t.publishResult(topic, "<INTERRUPTED>")
 		} else {
+			//program execution failed (status code != 0)
 			t.publishResult(topic, "<FAILED>;"+execErr.Error())
 		}
 		return
 	}
 
+	//publish the program's output (stdout & stderr)
 	t.publishResult(topic, output)
 }
 
@@ -143,6 +154,7 @@ func (t *Trigger) buildResultTopic(parentTopic string) string {
 }
 
 func (t *Trigger) Close(timeout time.Duration) error {
+	//unsubscribe to all mqtt-topics (ignore the timeout!)
 	for _, triggerConf := range t.triggerConfigs {
 		t.MqttClient.Unsubscribe(triggerConf.Topic)
 	}

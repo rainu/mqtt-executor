@@ -27,6 +27,7 @@ func (c *CommandExecutor) ExecuteCommand(cmd string, args []string) ([]byte, err
 }
 
 func (c *CommandExecutor) ExecuteCommandWithContext(cmd string, args []string, executionContext context.Context) ([]byte, error) {
+	//register the context so that we have a chance to cancel the commands later
 	ctx := c.registerContext(executionContext)
 	c.openExecutions.Add(1)
 	defer c.openExecutions.Done()
@@ -46,9 +47,11 @@ func (c *CommandExecutor) ExecuteCommandWithContext(cmd string, args []string, e
 }
 
 func (c *CommandExecutor) registerContext(parentContext context.Context) context.Context {
+	//lock to ensure the map is thread-safe
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
+	//wrap the given context so that we can later cancel the context (see Close func)
 	ctx, cancelFunc := context.WithCancel(parentContext)
 	c.usedContext[ctx] = cancelFunc
 
@@ -56,6 +59,7 @@ func (c *CommandExecutor) registerContext(parentContext context.Context) context
 }
 
 func (c *CommandExecutor) releaseContext(ctx context.Context) {
+	//lock to ensure the map is thread-safe
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -65,12 +69,15 @@ func (c *CommandExecutor) releaseContext(ctx context.Context) {
 func (c *CommandExecutor) Close(timeout time.Duration) error {
 	wg := sync.WaitGroup{}
 
+	//this lock ensures that no new commands can start
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
+	//cancel all in parallel
 	for ctx, cancelFunc := range c.usedContext {
 		wg.Add(1)
 
+		//trigger cancel-func and wait for it
 		go func(c context.Context, cf context.CancelFunc) {
 			defer wg.Done()
 			cf()         //call cancel
@@ -78,6 +85,7 @@ func (c *CommandExecutor) Close(timeout time.Duration) error {
 		}(ctx, cancelFunc)
 	}
 
+	//wait for all commands to be stopped
 	wgChan := make(chan bool)
 	go func() {
 		wg.Wait()

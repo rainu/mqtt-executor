@@ -20,6 +20,7 @@ type SensorWorker struct {
 
 func (s *SensorWorker) Initialise(publishQOS byte, sensorConfigs []config.Sensor) {
 
+	//generate a context so that we can cancel it later (see Close func)
 	var ctx context.Context
 	ctx, s.cancelFunc = context.WithCancel(context.Background())
 
@@ -32,24 +33,25 @@ func (s *SensorWorker) Initialise(publishQOS byte, sensorConfigs []config.Sensor
 func (s *SensorWorker) runSensor(ctx context.Context, publishQOS byte, sensorConf config.Sensor) {
 	defer s.waitGroup.Done()
 
-	//first one
-	s.executeCommand(publishQOS, sensorConf)
+	//first execution
+	s.executeCommand(ctx, publishQOS, sensorConf)
 
 	ticker := time.Tick(time.Duration(sensorConf.Interval))
 	for {
+		//wait until next tick or shutdown
 		select {
 		case <-ticker:
-			s.executeCommand(publishQOS, sensorConf)
+			s.executeCommand(ctx, publishQOS, sensorConf)
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func (s *SensorWorker) executeCommand(publishQOS byte, sensorConf config.Sensor) {
-	output, execErr := s.Executor.ExecuteCommand(sensorConf.Command.Name, sensorConf.Command.Arguments)
+func (s *SensorWorker) executeCommand(ctx context.Context, publishQOS byte, sensorConf config.Sensor) {
+	output, execErr := s.Executor.ExecuteCommandWithContext(sensorConf.Command.Name, sensorConf.Command.Arguments, ctx)
 	if execErr != nil {
-		s.MqttClient.Publish(sensorConf.ResultTopic, publishQOS, false, "<FAILED> "+execErr.Error())
+		s.MqttClient.Publish(sensorConf.ResultTopic, publishQOS, false, "<FAILED>;"+execErr.Error())
 		return
 	}
 
@@ -58,6 +60,7 @@ func (s *SensorWorker) executeCommand(publishQOS byte, sensorConf config.Sensor)
 
 func (s *SensorWorker) Close(timeout time.Duration) error {
 	if s.cancelFunc != nil {
+		//close the context to interrupt possible running commands
 		s.cancelFunc()
 	}
 

@@ -18,6 +18,7 @@ type StatusWorker struct {
 
 func (s *StatusWorker) Initialise(availabilityConfigs config.Availability) {
 
+	//generate a context so that we can cancel it later (see Close func)
 	var ctx context.Context
 	ctx, s.cancelFunc = context.WithCancel(context.Background())
 
@@ -29,6 +30,8 @@ func (s *StatusWorker) runStatus(ctx context.Context, availabilityConfig config.
 	defer s.waitGroup.Done()
 	defer func() {
 		token := s.MqttClient.Publish(availabilityConfig.Topic, byte(0), false, availabilityConfig.Payload.Unavailable)
+
+		//we should wait for the last state publish (graceful shutdown dont trigger the mqtt-last-will!)
 		token.Wait()
 	}()
 
@@ -37,6 +40,7 @@ func (s *StatusWorker) runStatus(ctx context.Context, availabilityConfig config.
 
 	ticker := time.Tick(time.Duration(*availabilityConfig.Interval))
 	for {
+		//wait until next tick or shutdown
 		select {
 		case <-ticker:
 			s.MqttClient.Publish(availabilityConfig.Topic, byte(0), false, availabilityConfig.Payload.Available)
@@ -48,6 +52,7 @@ func (s *StatusWorker) runStatus(ctx context.Context, availabilityConfig config.
 
 func (s *StatusWorker) Close(timeout time.Duration) error {
 	if s.cancelFunc != nil {
+		//close the context to interrupt possible running commands
 		s.cancelFunc()
 	}
 

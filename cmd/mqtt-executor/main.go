@@ -24,6 +24,7 @@ func main() {
 	trigger.Executor = commandExecutor
 	sensorWorker.Executor = commandExecutor
 
+	//reacting to signals (interrupt)
 	signals := make(chan os.Signal, 1)
 	defer close(signals)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
@@ -37,6 +38,7 @@ func main() {
 		zap.L().Fatal("Error while connecting to mqtt broker: %s", zap.Error(token.Error()))
 	}
 
+	//if hassio is enabled -> publish the hassio mqtt-discovery configs
 	if *Config.HomeassistantEnable {
 		haClient := hassio.Client{
 			DeviceName:  *Config.DeviceName,
@@ -69,6 +71,8 @@ func shutdown(client MQTT.Client) {
 	}
 	closeables := []closable{&statusWorker, &sensorWorker, &trigger, commandExecutor}
 
+	//most operating systems wait a maximum of 30 seconds
+
 	wg := sync.WaitGroup{}
 	wg.Add(len(closeables))
 	timeout := 20 * time.Second
@@ -84,5 +88,6 @@ func shutdown(client MQTT.Client) {
 	}
 	wg.Wait()
 
-	client.Disconnect(20 * 1000) //wait 10sek at most
+	//we have to disconnect at last because one closeable unsubscripe all topics
+	client.Disconnect(10 * 1000) //wait 10sek at most
 }

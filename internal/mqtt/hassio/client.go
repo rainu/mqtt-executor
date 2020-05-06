@@ -13,12 +13,13 @@ import (
 )
 
 type generalConfig struct {
-	Name                string  `json:"name"`
-	AvailabilityTopic   string  `json:"avty_t,omitempty"`
-	PayloadAvailable    string  `json:"pl_avail,omitempty"`
-	PayloadNotAvailable string  `json:"pl_not_avail,omitempty"`
-	UniqueId            string  `json:"uniq_id"`
-	Device              *device `json:"dev,omitempty"`
+	Name                string `json:"name"`
+	AvailabilityTopic   string `json:"avty_t,omitempty"`
+	PayloadAvailable    string `json:"pl_avail,omitempty"`
+	PayloadNotAvailable string `json:"pl_not_avail,omitempty"`
+	UniqueId            string `json:"uniq_id"`
+	Icon                string `json:"ic,omitempty"`
+	Device              device `json:"dev,omitempty"`
 }
 
 type sensorConfig struct {
@@ -26,7 +27,6 @@ type sensorConfig struct {
 
 	StateTopic      string `json:"stat_t"`
 	MeasurementUnit string `json:"unit_of_meas,omitempty"`
-	Icon            string `json:"ic,omitempty"`
 	ForceUpdate     *bool  `json:"frc_upd,omitempty"`
 }
 
@@ -82,13 +82,33 @@ func (c *Client) PublishDiscoveryConfig(config config.TopicConfigurations) {
 	//trigger
 	for _, trigger := range config.Trigger {
 		targetTopic := fmt.Sprintf("%sswitch/%s/%s/config", c.TopicPrefix, c.DeviceId, friendlyName(trigger.Name))
-		payload := c.generatePayloadForTriggerAction(config.Availability, trigger)
+		payload := c.generateSwitchPayloadForTriggerAction(config.Availability, trigger)
+		c.MqttClient.Publish(targetTopic, byte(0), false, payload)
+
+		//publish the trigger-result as sensor data
+		targetTopic = fmt.Sprintf("%ssensor/%s_%s/result/config", c.TopicPrefix, c.DeviceId, friendlyName(trigger.Name))
+		payload = c.generateResultPayloadForTriggerAction(config.Availability, trigger)
+		c.MqttClient.Publish(targetTopic, byte(0), false, payload)
+
+		//publish the trigger-state as sensor data
+		targetTopic = fmt.Sprintf("%ssensor/%s_%s/state/config", c.TopicPrefix, c.DeviceId, friendlyName(trigger.Name))
+		payload = c.generateStatePayloadForTriggerAction(config.Availability, trigger)
 		c.MqttClient.Publish(targetTopic, byte(0), false, payload)
 	}
 }
 
 func friendlyName(name string) string {
 	return strings.Replace(name, " ", "_", -1)
+}
+
+func (c *Client) buildDevice() device {
+	return device{
+		Name:         c.DeviceName,
+		Ids:          []string{c.DeviceId},
+		Manufacturer: "rainu",
+		Model:        runtime.GOOS,
+		Version:      "mqtt-executor",
+	}
 }
 
 func (c *Client) generatePayloadForStatus(availability *config.Availability) []byte {
@@ -98,13 +118,7 @@ func (c *Client) generatePayloadForStatus(availability *config.Availability) []b
 			PayloadAvailable:    availability.Payload.Available,
 			PayloadNotAvailable: availability.Payload.Unavailable,
 			UniqueId:            fmt.Sprintf("%s_status", c.DeviceId),
-			Device: &device{
-				Name:         c.DeviceName,
-				Ids:          []string{c.DeviceId},
-				Manufacturer: "rainu",
-				Model:        runtime.GOOS,
-				Version:      "mqtt-executor",
-			},
+			Device:              c.buildDevice(),
 		},
 		StateTopic: availability.Topic,
 	}
@@ -115,6 +129,7 @@ func (c *Client) generatePayloadForStatus(availability *config.Availability) []b
 
 	payload, err := json.Marshal(conf)
 	if err != nil {
+		//the "marshalling" is relatively safe - it should never appear at runtime
 		panic(err)
 	}
 	return payload
@@ -125,37 +140,31 @@ func (c *Client) generatePayloadForSensor(availability *config.Availability, sen
 	conf := sensorConfig{
 		generalConfig: generalConfig{
 			Name:     sensor.Name,
+			Icon:     sensor.Icon,
 			UniqueId: fmt.Sprintf("%s_%s", c.DeviceId, friendlyName(sensor.Name)),
-			Device: &device{
-				Ids: []string{c.DeviceId},
-			},
+			Device:   c.buildDevice(),
 		},
 		StateTopic:      sensor.ResultTopic,
 		MeasurementUnit: sensor.Unit,
-		Icon:            "",
 		ForceUpdate:     &bTrue,
 	}
-	if availability != nil {
-		conf.AvailabilityTopic = availability.Topic
-		conf.PayloadAvailable = availability.Payload.Available
-		conf.PayloadNotAvailable = availability.Payload.Unavailable
-	}
+	addAvailability(&conf.generalConfig, availability)
 
 	payload, err := json.Marshal(conf)
 	if err != nil {
+		//the "marshalling" is relatively safe - it should never appear at runtime
 		panic(err)
 	}
 	return payload
 }
 
-func (c *Client) generatePayloadForTriggerAction(availability *config.Availability, trigger config.Trigger) []byte {
+func (c *Client) generateSwitchPayloadForTriggerAction(availability *config.Availability, trigger config.Trigger) []byte {
 	conf := triggerConfig{
 		generalConfig: generalConfig{
 			Name:     fmt.Sprintf("%s", trigger.Name),
+			Icon:     trigger.Icon,
 			UniqueId: fmt.Sprintf("%s_%s", c.DeviceId, friendlyName(trigger.Name)),
-			Device: &device{
-				Ids: []string{c.DeviceId},
-			},
+			Device:   c.buildDevice(),
 		},
 		CommandTopic: trigger.Topic,
 		PayloadStart: mqtt.PayloadStart,
@@ -164,15 +173,60 @@ func (c *Client) generatePayloadForTriggerAction(availability *config.Availabili
 		StateRunning: mqtt.PayloadStatusRunning,
 		StateStopped: mqtt.PayloadStatusStopped,
 	}
-	if availability != nil {
-		conf.AvailabilityTopic = availability.Topic
-		conf.PayloadAvailable = availability.Payload.Available
-		conf.PayloadNotAvailable = availability.Payload.Unavailable
-	}
+	addAvailability(&conf.generalConfig, availability)
 
 	payload, err := json.Marshal(conf)
 	if err != nil {
+		//the "marshalling" is relatively safe - it should never appear at runtime
 		panic(err)
 	}
 	return payload
+}
+
+func (c *Client) generateResultPayloadForTriggerAction(availability *config.Availability, trigger config.Trigger) []byte {
+	conf := sensorConfig{
+		generalConfig: generalConfig{
+			Name:     fmt.Sprintf("%s - Result", trigger.Name),
+			Icon:     trigger.Icon,
+			UniqueId: fmt.Sprintf("%s_%s_result", c.DeviceId, friendlyName(trigger.Name)),
+			Device:   c.buildDevice(),
+		},
+		StateTopic: fmt.Sprintf("%s/%s", trigger.Topic, mqtt.TopicSuffixResult),
+	}
+	addAvailability(&conf.generalConfig, availability)
+
+	payload, err := json.Marshal(conf)
+	if err != nil {
+		//the "marshalling" is relatively safe - it should never appear at runtime
+		panic(err)
+	}
+	return payload
+}
+
+func (c *Client) generateStatePayloadForTriggerAction(availability *config.Availability, trigger config.Trigger) []byte {
+	conf := sensorConfig{
+		generalConfig: generalConfig{
+			Name:     fmt.Sprintf("%s - State", trigger.Name),
+			Icon:     trigger.Icon,
+			UniqueId: fmt.Sprintf("%s_%s_state", c.DeviceId, friendlyName(trigger.Name)),
+			Device:   c.buildDevice(),
+		},
+		StateTopic: fmt.Sprintf("%s/%s", trigger.Topic, mqtt.TopicSuffixState),
+	}
+	addAvailability(&conf.generalConfig, availability)
+
+	payload, err := json.Marshal(conf)
+	if err != nil {
+		//the "marshalling" is relatively safe - it should never appear at runtime
+		panic(err)
+	}
+	return payload
+}
+
+func addAvailability(config *generalConfig, availability *config.Availability) {
+	if availability != nil {
+		config.AvailabilityTopic = availability.Topic
+		config.PayloadAvailable = availability.Payload.Available
+		config.PayloadNotAvailable = availability.Payload.Unavailable
+	}
 }

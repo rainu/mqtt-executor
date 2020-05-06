@@ -26,6 +26,7 @@ type Availability struct {
 type Trigger struct {
 	Name    string  `json:"name"`
 	Topic   string  `json:"topic"`
+	Icon    string  `json:"icon"`
 	Command Command `json:"command"`
 }
 
@@ -34,6 +35,7 @@ type Sensor struct {
 	ResultTopic string   `json:"topic"`
 	Interval    Interval `json:"interval"`
 	Unit        string   `json:"unit"`
+	Icon        string   `json:"icon"`
 	Command     Command  `json:"command"`
 }
 
@@ -42,15 +44,15 @@ type Command struct {
 	Arguments []string `json:"arguments"`
 }
 
-func LoadTopicConfiguration(configFile, deviceId string) (TopicConfigurations, error) {
-	file, err := os.Open(configFile)
+func LoadTopicConfiguration(configFilePath, deviceId string) (TopicConfigurations, error) {
+	configFile, err := os.Open(configFilePath)
 	if err != nil {
 		return TopicConfigurations{}, fmt.Errorf("error while opening topic configuration file: %w", err)
 	}
-	defer file.Close()
+	defer configFile.Close()
 
 	var topicConfig TopicConfigurations
-	err = json.NewDecoder(file).Decode(&topicConfig)
+	err = json.NewDecoder(configFile).Decode(&topicConfig)
 	if err != nil {
 		return TopicConfigurations{}, fmt.Errorf("could not read topic configuration file: %w", err)
 	}
