@@ -24,11 +24,8 @@ type Availability struct {
 }
 
 type Trigger struct {
-	Name    string        `json:"name"`
-	Topic   string        `json:"topic"`
-	Actions TriggerAction `json:"actions"`
-}
-type TriggerAction map[string]struct {
+	Name    string  `json:"name"`
+	Topic   string  `json:"topic"`
 	Command Command `json:"command"`
 }
 
@@ -91,5 +88,6 @@ func (t *TopicConfigurations) validate() error {
 	//TODO
 	//keine wildcards in Topic-Namen
 	//Keine Sonderzeichen in Payloads
+	//Trigger-Name muss einzigartig sein
 	return nil
 }

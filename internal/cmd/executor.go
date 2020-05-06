@@ -35,8 +35,11 @@ func (c *CommandExecutor) ExecuteCommandWithContext(cmd string, args []string, e
 	command := exec.CommandContext(ctx, cmd, args...)
 	out, execErr := command.CombinedOutput()
 
-	if execErr != nil {
+	if execErr != nil && ctx.Err() == nil {
 		zap.L().Error("Command execution failed.", zap.Error(execErr))
+	} else if ctx.Err() != nil {
+		zap.L().Info("Command execution cancelled.")
+		return out, ctx.Err()
 	}
 
 	return out, execErr

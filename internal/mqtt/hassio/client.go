@@ -81,11 +81,9 @@ func (c *Client) PublishDiscoveryConfig(config config.TopicConfigurations) {
 
 	//trigger
 	for _, trigger := range config.Trigger {
-		for action := range trigger.Actions {
-			targetTopic := fmt.Sprintf("%sswitch/%s_%s/%s/config", c.TopicPrefix, c.DeviceId, friendlyName(trigger.Name), friendlyName(action))
-			payload := c.generatePayloadForTriggerAction(config.Availability, trigger, action)
-			c.MqttClient.Publish(targetTopic, byte(0), false, payload)
-		}
+		targetTopic := fmt.Sprintf("%sswitch/%s/%s/config", c.TopicPrefix, c.DeviceId, friendlyName(trigger.Name))
+		payload := c.generatePayloadForTriggerAction(config.Availability, trigger)
+		c.MqttClient.Publish(targetTopic, byte(0), false, payload)
 	}
 }
 
@@ -150,19 +148,19 @@ func (c *Client) generatePayloadForSensor(availability *config.Availability, sen
 	return payload
 }
 
-func (c *Client) generatePayloadForTriggerAction(availability *config.Availability, trigger config.Trigger, action string) []byte {
+func (c *Client) generatePayloadForTriggerAction(availability *config.Availability, trigger config.Trigger) []byte {
 	conf := triggerConfig{
 		generalConfig: generalConfig{
-			Name:     fmt.Sprintf("%s - %s", trigger.Name, action),
-			UniqueId: fmt.Sprintf("%s_%s_%s", c.DeviceId, friendlyName(trigger.Name), friendlyName(action)),
+			Name:     fmt.Sprintf("%s", trigger.Name),
+			UniqueId: fmt.Sprintf("%s_%s", c.DeviceId, friendlyName(trigger.Name)),
 			Device: &device{
 				Ids: []string{c.DeviceId},
 			},
 		},
 		CommandTopic: trigger.Topic,
-		PayloadStart: action,
+		PayloadStart: mqtt.PayloadStart,
 		PayloadStop:  mqtt.PayloadStop,
-		StateTopic:   fmt.Sprintf("%s/%s/%s", trigger.Topic, action, mqtt.TopicSuffixState),
+		StateTopic:   fmt.Sprintf("%s/%s", trigger.Topic, mqtt.TopicSuffixState),
 		StateRunning: mqtt.PayloadStatusRunning,
 		StateStopped: mqtt.PayloadStatusStopped,
 	}
