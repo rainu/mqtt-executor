@@ -2,8 +2,10 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -15,12 +17,13 @@ type TopicConfigurations struct {
 }
 
 type Availability struct {
-	Topic   string `json:"topic"`
-	Payload struct {
-		Available   string `json:"available"`
-		Unavailable string `json:"unavailable"`
-	} `json:"payload"`
-	Interval *Interval `json:"interval"`
+	Topic    string              `json:"topic"`
+	Payload  availabilityPayload `json:"payload"`
+	Interval *Interval           `json:"interval"`
+}
+type availabilityPayload struct {
+	Available   string `json:"available"`
+	Unavailable string `json:"unavailable"`
 }
 
 type Trigger struct {
@@ -87,9 +90,77 @@ func LoadTopicConfiguration(configFilePath, deviceId string) (TopicConfiguration
 }
 
 func (t *TopicConfigurations) validate() error {
-	//TODO
-	//keine wildcards in Topic-Namen
-	//Keine Sonderzeichen in Payloads
-	//Trigger-Name muss einzigartig sein
+	if t.Availability != nil {
+		if err := checkTopicName(t.Availability.Topic); err != nil {
+			return fmt.Errorf("invalid availability topic: %w", err)
+		}
+	}
+
+	sensorNames := map[string]bool{}
+	for i, sensor := range t.Sensor {
+		if err := validateSensor(sensor); err != nil {
+			return fmt.Errorf("invalid sensor (#%d): %w", i, err)
+		}
+
+		if _, exists := sensorNames[sensor.Name]; exists {
+			return fmt.Errorf("invalid sensor (#%d): sensor with this name already exists", i)
+		}
+		sensorNames[sensor.Name] = true
+	}
+
+	triggerNames := map[string]bool{}
+	for i, trigger := range t.Trigger {
+		if err := validateTrigger(trigger); err != nil {
+			return fmt.Errorf("invalid trigger (#%d): %w", i, err)
+		}
+
+		if _, exists := triggerNames[trigger.Name]; exists {
+			return fmt.Errorf("invalid trigger (#%d): trigger with this name already exists", i)
+		}
+		triggerNames[trigger.Name] = true
+	}
+
+	return nil
+}
+
+func validateSensor(sensor Sensor) error {
+	if sensor.Name == "" {
+		return errors.New("name must not be empty")
+	}
+	if time.Duration(sensor.Interval).Nanoseconds() == 0 {
+		return errors.New("invalid duration")
+	}
+	if err := checkTopicName(sensor.ResultTopic); err != nil {
+		return fmt.Errorf("invalid topic: %w", err)
+	}
+	if sensor.Command.Name == "" {
+		return errors.New("command name must not be empty")
+	}
+	return nil
+}
+
+func validateTrigger(trigger Trigger) error {
+	if trigger.Name == "" {
+		return errors.New("name must not be empty")
+	}
+	if err := checkTopicName(trigger.Topic); err != nil {
+		return fmt.Errorf("invalid topic: %w", err)
+	}
+	if trigger.Command.Name == "" {
+		return errors.New("command name must not be empty")
+	}
+	return nil
+}
+
+var topicRegex = regexp.MustCompile(`^[a-zA-Z0-9_/]*$`)
+
+func checkTopicName(topic string) error {
+	if strings.Trim(topic, " ") == "" {
+		return errors.New("must not be empty")
+	}
+	if !topicRegex.MatchString(topic) {
+		return errors.New("invalid character")
+	}
+
 	return nil
 }
