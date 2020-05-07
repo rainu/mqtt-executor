@@ -1,0 +1,14 @@
+#!/bin/sh /etc/rc.common
+# Example script
+# Copyright (C) 2007 OpenWrt.org
+
+START=99
+STOP=15
+
+start() {
+    /path/to/mqtt-executor -broker tcp://<mqtt-broker>:1883 -config /path/to/config.json
+}
+
+stop() {
+    killall mqtt-executor
+}
