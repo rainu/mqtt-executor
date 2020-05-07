@@ -22,25 +22,59 @@ const (
 )
 
 type Trigger struct {
+	initialised     bool
 	lock            sync.RWMutex
 	runningCommands map[string]context.CancelFunc
 	triggerConfigs  []config.Trigger
+	subscriptions   map[string]subscription
+	subscribeQOS    byte
 	publishQOS      byte
 
 	Executor   *cmd.CommandExecutor
 	MqttClient MQTT.Client
 }
 
+type subscription struct {
+	trigger config.Trigger
+	handler MQTT.MessageHandler
+}
+
 func (t *Trigger) Initialise(subscribeQOS, publishQOS byte, triggerConfigs []config.Trigger) {
+	t.subscribeQOS = subscribeQOS
 	t.publishQOS = publishQOS
 	t.runningCommands = map[string]context.CancelFunc{}
+	t.subscriptions = map[string]subscription{}
 	t.triggerConfigs = triggerConfigs //safe the configs so that we can unsubscribe later (see Close func)
 
 	for _, triggerConf := range triggerConfigs {
-		t.MqttClient.Subscribe(triggerConf.Topic, subscribeQOS, t.createTriggerHandler(triggerConf))
+		t.subscriptions[triggerConf.Topic] = subscription{
+			trigger: triggerConf,
+			handler: t.createTriggerHandler(triggerConf),
+		}
+
+		t.MqttClient.Subscribe(triggerConf.Topic, subscribeQOS, t.subscriptions[triggerConf.Name].handler)
 
 		//publish the stopped state on startup
 		t.publishStatus(triggerConf.Topic, PayloadStatusStopped)
+	}
+
+	t.initialised = true
+}
+
+func (t *Trigger) IsInitialised() bool {
+	return t.initialised
+}
+
+func (t *Trigger) ReInitialise() {
+	for triggerName, subscription := range t.subscriptions {
+		t.MqttClient.Subscribe(subscription.trigger.Topic, t.subscribeQOS, subscription.handler)
+
+		//publish the current state on reinitialisation
+		if t.isCommandRunning(triggerName) {
+			t.publishStatus(subscription.trigger.Topic, PayloadStatusRunning)
+		} else {
+			t.publishStatus(subscription.trigger.Topic, PayloadStatusStopped)
+		}
 	}
 }
 
@@ -56,14 +90,14 @@ func (t *Trigger) createTriggerHandler(triggerConfig config.Trigger) MQTT.Messag
 		switch action {
 		case PayloadStart:
 			//ensure that only one trigger runs at the same time
-			if t.isCommandRunning(triggerConfig) {
+			if t.isCommandRunning(triggerConfig.Name) {
 				zap.L().Warn("Command is already running. Skip execution!", zap.String("trigger", triggerConfig.Name))
 				return
 			}
 
 			go t.executeCommand(message.Topic(), triggerConfig)
 		case PayloadStop:
-			if !t.isCommandRunning(triggerConfig) {
+			if !t.isCommandRunning(triggerConfig.Name) {
 				//no command running -> no action
 				return
 			}
@@ -75,12 +109,12 @@ func (t *Trigger) createTriggerHandler(triggerConfig config.Trigger) MQTT.Messag
 	}
 }
 
-func (t *Trigger) isCommandRunning(trigger config.Trigger) bool {
+func (t *Trigger) isCommandRunning(triggerName string) bool {
 	//we only need read access
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
-	_, exist := t.runningCommands[trigger.Name]
+	_, exist := t.runningCommands[triggerName]
 	return exist
 }
 

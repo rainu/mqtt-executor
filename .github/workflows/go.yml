@@ -38,8 +38,9 @@ jobs:
           CGO_ENABLED: 0
           GOOS: ${{ matrix.go-os }}
           GOARCH: ${{ matrix.go-arch }}
-        run: go build -a -installsuffix cgo -o mqtt-executor-${{ matrix.go-os }}-${{ matrix.go-arch }} -v ./cmd/mqtt-executor/
-      - uses: actions/upload-artifact@v2
-        with:
-          name: mqtt-executor-${{ matrix.go-os }}-${{ matrix.go-arch }}
-          path: mqtt-executor-${{ matrix.go-os }}-${{ matrix.go-arch }}
+        run: |
+          BINARY=mqtt-executor-${{ matrix.go-os }}-${{ matrix.go-arch }}
+          if [ "$GOOS" = "windows" ]; then
+            BINARY=$BINARY.exe
+          fi
+          go build -a -installsuffix cgo -o $BINARY -v ./cmd/mqtt-executor/

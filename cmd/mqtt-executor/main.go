@@ -29,7 +29,10 @@ func main() {
 	defer close(signals)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
 
-	client := MQTT.NewClient(Config.GetMQTTOpts())
+	client := MQTT.NewClient(Config.GetMQTTOpts(
+		handleOnConnection,
+		handleOnConnectionLost,
+	))
 	statusWorker.MqttClient = client
 	trigger.MqttClient = client
 	sensorWorker.MqttClient = client
@@ -61,6 +64,19 @@ func main() {
 	<-signals
 
 	shutdown(client)
+}
+
+var handleOnConnection = func(client MQTT.Client) {
+	if !trigger.IsInitialised() {
+		return
+	}
+
+	zap.L().Info("Reinitialise...")
+	trigger.ReInitialise()
+}
+
+var handleOnConnectionLost = func(client MQTT.Client, err error) {
+	zap.L().Warn("Connection lost to broker.", zap.Error(err))
 }
 
 func shutdown(client MQTT.Client) {

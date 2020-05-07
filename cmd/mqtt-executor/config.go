@@ -73,7 +73,10 @@ func LoadConfig() {
 	}
 }
 
-func (c *applicationConfig) GetMQTTOpts() *MQTT.ClientOptions {
+func (c *applicationConfig) GetMQTTOpts(
+	onConn MQTT.OnConnectHandler,
+	onLost MQTT.ConnectionLostHandler) *MQTT.ClientOptions {
+
 	opts := MQTT.NewClientOptions()
 
 	opts.AddBroker(*c.Broker)
@@ -93,6 +96,9 @@ func (c *applicationConfig) GetMQTTOpts() *MQTT.ClientOptions {
 		opts.WillPayload = []byte(c.TopicConfigurations.Availability.Payload.Unavailable)
 		opts.WillTopic = c.TopicConfigurations.Availability.Topic
 	}
+
+	opts.SetOnConnectHandler(onConn)
+	opts.SetConnectionLostHandler(onLost)
 
 	return opts
 }
