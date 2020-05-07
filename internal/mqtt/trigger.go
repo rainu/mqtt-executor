@@ -47,7 +47,7 @@ func (t *Trigger) Initialise(subscribeQOS, publishQOS byte, triggerConfigs []con
 	t.triggerConfigs = triggerConfigs //safe the configs so that we can unsubscribe later (see Close func)
 
 	for _, triggerConf := range triggerConfigs {
-		t.subscriptions[triggerConf.Topic] = subscription{
+		t.subscriptions[triggerConf.Name] = subscription{
 			trigger: triggerConf,
 			handler: t.createTriggerHandler(triggerConf),
 		}
