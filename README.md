@@ -13,8 +13,6 @@ You can build it on your own (you will need [golang](https://golang.org/) instal
 go build -a -installsuffix cgo ./cmd/mqtt-executor/
 ```
 
-Or if you are **logged in** at github, you can download the pre-build artifacts (bleeding edge): [here](https://github.com/rainu/mqtt-executor/actions?query=is%3Asuccess+branch%3Amaster)
-
 Or you can download the release binaries: [here](https://github.com/rainu/mqtt-executor/releases/latest)
 
 # Configuration
