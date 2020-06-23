@@ -80,8 +80,8 @@ func (c *CommandExecutor) Close(timeout time.Duration) error {
 		//trigger cancel-func and wait for it
 		go func(c context.Context, cf context.CancelFunc) {
 			defer wg.Done()
-			cf()         //call cancel
-			<-ctx.Done() //wait for cancellation
+			cf()       //call cancel
+			<-c.Done() //wait for cancellation
 		}(ctx, cancelFunc)
 	}
 

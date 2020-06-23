@@ -29,21 +29,21 @@ func (s *StatusWorker) Initialise(availabilityConfigs config.Availability) {
 func (s *StatusWorker) runStatus(ctx context.Context, availabilityConfig config.Availability) {
 	defer s.waitGroup.Done()
 	defer func() {
-		token := s.MqttClient.Publish(availabilityConfig.Topic, byte(0), false, availabilityConfig.Payload.Unavailable)
+		token := s.MqttClient.Publish(availabilityConfig.Topic, byte(1), false, availabilityConfig.Payload.Unavailable)
 
 		//we should wait for the last state publish (graceful shutdown dont trigger the mqtt-last-will!)
 		token.Wait()
 	}()
 
 	//first one
-	s.MqttClient.Publish(availabilityConfig.Topic, byte(0), false, availabilityConfig.Payload.Available)
+	s.MqttClient.Publish(availabilityConfig.Topic, byte(1), false, availabilityConfig.Payload.Available)
 
 	ticker := time.Tick(time.Duration(*availabilityConfig.Interval))
 	for {
 		//wait until next tick or shutdown
 		select {
 		case <-ticker:
-			s.MqttClient.Publish(availabilityConfig.Topic, byte(0), false, availabilityConfig.Payload.Available)
+			s.MqttClient.Publish(availabilityConfig.Topic, byte(1), false, availabilityConfig.Payload.Available)
 		case <-ctx.Done():
 			return
 		}
