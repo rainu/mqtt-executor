@@ -1,6 +1,9 @@
 package main
 
-import "go.uber.org/zap"
+import (
+	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"go.uber.org/zap"
+)
 
 func init() {
 	//initialise our global logger
@@ -9,5 +12,9 @@ func init() {
 		zap.AddStacktrace(zap.FatalLevel), //disable stacktrace for level lower than fatal
 	)
 	zap.ReplaceGlobals(logger)
-	defer zap.L().Sync()
+
+	MQTT.ERROR, _ = zap.NewStdLogAt(zap.L(), zap.ErrorLevel)
+	MQTT.CRITICAL, _ = zap.NewStdLogAt(zap.L(), zap.ErrorLevel)
+	MQTT.WARN, _ = zap.NewStdLogAt(zap.L(), zap.WarnLevel)
+	MQTT.DEBUG, _ = zap.NewStdLogAt(zap.L(), zap.DebugLevel)
 }
