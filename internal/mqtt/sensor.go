@@ -51,11 +51,11 @@ func (s *SensorWorker) runSensor(ctx context.Context, publishQOS byte, sensorCon
 func (s *SensorWorker) executeCommand(ctx context.Context, publishQOS byte, sensorConf config.Sensor) {
 	output, execErr := s.Executor.ExecuteCommandWithContext(sensorConf.Command.Name, sensorConf.Command.Arguments, ctx)
 	if execErr != nil {
-		s.MqttClient.Publish(sensorConf.ResultTopic, publishQOS, false, "<FAILED>;"+execErr.Error())
+		s.MqttClient.Publish(sensorConf.ResultTopic, publishQOS, sensorConf.Retained, "<FAILED>;"+execErr.Error())
 		return
 	}
 
-	s.MqttClient.Publish(sensorConf.ResultTopic, publishQOS, false, output)
+	s.MqttClient.Publish(sensorConf.ResultTopic, publishQOS, sensorConf.Retained, output)
 }
 
 func (s *SensorWorker) Close(timeout time.Duration) error {

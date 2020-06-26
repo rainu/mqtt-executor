@@ -92,6 +92,7 @@ func (c *applicationConfig) GetMQTTOpts(
 
 	if c.TopicConfigurations.Availability != nil {
 		opts.WillEnabled = true
+		opts.WillRetained = true
 		opts.WillQos = byte(*c.PublishQOS)
 		opts.WillPayload = []byte(c.TopicConfigurations.Availability.Payload.Unavailable)
 		opts.WillTopic = c.TopicConfigurations.Availability.Topic

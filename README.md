@@ -38,6 +38,7 @@ Create a configuration file named "config.json"
   "sensor": [{
     "name": "Free Memory",
     "topic": "tele/__DEVICE_ID__/memory/free",
+    "retained": false,
     "unit": "kB",       //used for hassio
     "icon": "hass:eye", //used for hassio
     "interval": "10s",

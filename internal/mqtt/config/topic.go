@@ -17,9 +17,8 @@ type TopicConfigurations struct {
 }
 
 type Availability struct {
-	Topic    string              `json:"topic"`
-	Payload  availabilityPayload `json:"payload"`
-	Interval *Interval           `json:"interval"`
+	Topic   string              `json:"topic"`
+	Payload availabilityPayload `json:"payload"`
 }
 type availabilityPayload struct {
 	Available   string `json:"available"`
@@ -36,6 +35,7 @@ type Trigger struct {
 type Sensor struct {
 	Name        string   `json:"name"`
 	ResultTopic string   `json:"topic"`
+	Retained    bool     `json:"retained"`
 	Interval    Interval `json:"interval"`
 	Unit        string   `json:"unit"`
 	Icon        string   `json:"icon"`
@@ -68,10 +68,6 @@ func LoadTopicConfiguration(configFilePath, deviceId string) (TopicConfiguration
 	//replace DEVICE_ID
 	if topicConfig.Availability != nil {
 		topicConfig.Availability.Topic = strings.Replace(topicConfig.Availability.Topic, "__DEVICE_ID__", deviceId, -1)
-		if topicConfig.Availability.Interval == nil {
-			defaultInterval := Interval(30 * time.Second)
-			topicConfig.Availability.Interval = &defaultInterval
-		}
 		if topicConfig.Availability.Payload.Available == "" {
 			topicConfig.Availability.Payload.Available = "Online"
 		}
