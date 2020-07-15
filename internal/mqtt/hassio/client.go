@@ -70,14 +70,14 @@ func (c *Client) PublishDiscoveryConfig(config config.TopicConfigurations) {
 	if config.Availability != nil {
 		targetTopic := fmt.Sprintf("%ssensor/%s_status/config", c.TopicPrefix, c.DeviceId)
 		payload := c.generatePayloadForStatus(config.Availability)
-		c.MqttClient.Publish(targetTopic, byte(1), true, payload)
+		c.MqttClient.Publish(targetTopic, byte(1), false, payload)
 	}
 
 	//sensor
 	for _, sensor := range config.Sensor {
 		targetTopic := fmt.Sprintf("%ssensor/%s_%s/config", c.TopicPrefix, c.DeviceId, friendlyName(sensor.Name))
 		payload := c.generatePayloadForSensor(config.Availability, sensor)
-		c.MqttClient.Publish(targetTopic, byte(1), true, payload)
+		c.MqttClient.Publish(targetTopic, byte(1), false, payload)
 	}
 
 	//multi sensor
@@ -85,7 +85,7 @@ func (c *Client) PublishDiscoveryConfig(config config.TopicConfigurations) {
 		for _, sensorValue := range sensor.Values {
 			targetTopic := fmt.Sprintf("%ssensor/%s_%s/config", c.TopicPrefix, c.DeviceId, friendlyName(sensorValue.Name))
 			payload := c.generatePayloadForMultiSensor(config.Availability, sensor, sensorValue)
-			c.MqttClient.Publish(targetTopic, byte(1), true, payload)
+			c.MqttClient.Publish(targetTopic, byte(1), false, payload)
 		}
 	}
 
@@ -93,17 +93,17 @@ func (c *Client) PublishDiscoveryConfig(config config.TopicConfigurations) {
 	for _, trigger := range config.Trigger {
 		targetTopic := fmt.Sprintf("%sswitch/%s/%s/config", c.TopicPrefix, c.DeviceId, friendlyName(trigger.Name))
 		payload := c.generateSwitchPayloadForTriggerAction(config.Availability, trigger)
-		c.MqttClient.Publish(targetTopic, byte(1), true, payload)
+		c.MqttClient.Publish(targetTopic, byte(1), false, payload)
 
 		//publish the trigger-result as sensor data
 		targetTopic = fmt.Sprintf("%ssensor/%s_%s/result/config", c.TopicPrefix, c.DeviceId, friendlyName(trigger.Name))
 		payload = c.generateResultPayloadForTriggerAction(config.Availability, trigger)
-		c.MqttClient.Publish(targetTopic, byte(1), true, payload)
+		c.MqttClient.Publish(targetTopic, byte(1), false, payload)
 
 		//publish the trigger-state as sensor data
 		targetTopic = fmt.Sprintf("%ssensor/%s_%s/state/config", c.TopicPrefix, c.DeviceId, friendlyName(trigger.Name))
 		payload = c.generateStatePayloadForTriggerAction(config.Availability, trigger)
-		c.MqttClient.Publish(targetTopic, byte(1), true, payload)
+		c.MqttClient.Publish(targetTopic, byte(1), false, payload)
 	}
 }
 
