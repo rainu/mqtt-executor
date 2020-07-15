@@ -18,7 +18,7 @@ type SensorWorker struct {
 	MqttClient MQTT.Client
 }
 
-func (s *SensorWorker) Initialise(publishQOS byte, sensorConfigs []config.Sensor) {
+func (s *SensorWorker) Initialise(publishQOS byte, sensorConfigs []config.GeneralSensor) {
 
 	//generate a context so that we can cancel it later (see Close func)
 	var ctx context.Context
@@ -30,7 +30,7 @@ func (s *SensorWorker) Initialise(publishQOS byte, sensorConfigs []config.Sensor
 	}
 }
 
-func (s *SensorWorker) runSensor(ctx context.Context, publishQOS byte, sensorConf config.Sensor) {
+func (s *SensorWorker) runSensor(ctx context.Context, publishQOS byte, sensorConf config.GeneralSensor) {
 	defer s.waitGroup.Done()
 
 	//first execution
@@ -48,7 +48,7 @@ func (s *SensorWorker) runSensor(ctx context.Context, publishQOS byte, sensorCon
 	}
 }
 
-func (s *SensorWorker) executeCommand(ctx context.Context, publishQOS byte, sensorConf config.Sensor) {
+func (s *SensorWorker) executeCommand(ctx context.Context, publishQOS byte, sensorConf config.GeneralSensor) {
 	output, execErr := s.Executor.ExecuteCommandWithContext(sensorConf.Command.Name, sensorConf.Command.Arguments, ctx)
 	if execErr != nil {
 		s.MqttClient.Publish(sensorConf.ResultTopic, publishQOS, sensorConf.Retained, "<FAILED>;"+execErr.Error())

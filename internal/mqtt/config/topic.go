@@ -33,22 +33,25 @@ type Trigger struct {
 	Command Command `json:"command"`
 }
 
-type Sensor struct {
-	Name        string   `json:"name"`
+type GeneralSensor struct {
 	ResultTopic string   `json:"topic"`
 	Retained    bool     `json:"retained"`
 	Interval    Interval `json:"interval"`
-	Unit        string   `json:"unit"`
-	Icon        string   `json:"icon"`
 	Command     Command  `json:"command"`
 }
 
+type Sensor struct {
+	GeneralSensor
+
+	Name string `json:"name"`
+	Unit string `json:"unit"`
+	Icon string `json:"icon"`
+}
+
 type MultiSensor struct {
-	ResultTopic string             `json:"topic"`
-	Retained    bool               `json:"retained"`
-	Interval    Interval           `json:"interval"`
-	Command     Command            `json:"command"`
-	Values      []MultiSensorValue `json:"values"`
+	GeneralSensor
+
+	Values []MultiSensorValue `json:"values"`
 }
 
 type MultiSensorValue struct {
@@ -102,6 +105,17 @@ func LoadTopicConfiguration(configFilePath, deviceId string) (TopicConfiguration
 	}
 
 	return topicConfig, nil
+}
+
+func (t *TopicConfigurations) Sensors() []GeneralSensor {
+	sensors := make([]GeneralSensor, 0, len(t.Sensor)+len(t.MultiSensor))
+	for _, sensor := range t.Sensor {
+		sensors = append(sensors, sensor.GeneralSensor)
+	}
+	for _, sensor := range t.MultiSensor {
+		sensors = append(sensors, sensor.GeneralSensor)
+	}
+	return sensors
 }
 
 func (t *TopicConfigurations) validate() error {

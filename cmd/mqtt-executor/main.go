@@ -58,7 +58,7 @@ func main() {
 
 	//register trigger and sensors
 	trigger.Initialise(byte(*Config.SubscribeQOS), byte(*Config.PublishQOS), Config.TopicConfigurations.Trigger)
-	sensorWorker.Initialise(byte(*Config.PublishQOS), Config.TopicConfigurations.Sensor)
+	sensorWorker.Initialise(byte(*Config.PublishQOS), Config.TopicConfigurations.Sensors())
 
 	// wait for interrupt
 	<-signals
