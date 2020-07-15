@@ -14,6 +14,7 @@ type TopicConfigurations struct {
 	Availability *Availability `json:"availability,omitempty"`
 	Trigger      []Trigger     `json:"trigger"`
 	Sensor       []Sensor      `json:"sensor"`
+	MultiSensor  []MultiSensor `json:"multi_sensor"`
 }
 
 type Availability struct {
@@ -40,6 +41,21 @@ type Sensor struct {
 	Unit        string   `json:"unit"`
 	Icon        string   `json:"icon"`
 	Command     Command  `json:"command"`
+}
+
+type MultiSensor struct {
+	ResultTopic string             `json:"topic"`
+	Retained    bool               `json:"retained"`
+	Interval    Interval           `json:"interval"`
+	Command     Command            `json:"command"`
+	Values      []MultiSensorValue `json:"values"`
+}
+
+type MultiSensorValue struct {
+	Name     string `json:"name"`
+	Template string `json:"template"`
+	Unit     string `json:"unit"`
+	Icon     string `json:"icon"`
 }
 
 type Command struct {
@@ -81,6 +97,9 @@ func LoadTopicConfiguration(configFilePath, deviceId string) (TopicConfiguration
 	for i := range topicConfig.Sensor {
 		topicConfig.Sensor[i].ResultTopic = strings.Replace(topicConfig.Sensor[i].ResultTopic, "__DEVICE_ID__", deviceId, -1)
 	}
+	for i := range topicConfig.MultiSensor {
+		topicConfig.MultiSensor[i].ResultTopic = strings.Replace(topicConfig.MultiSensor[i].ResultTopic, "__DEVICE_ID__", deviceId, -1)
+	}
 
 	return topicConfig, nil
 }
@@ -104,6 +123,19 @@ func (t *TopicConfigurations) validate() error {
 		sensorNames[sensor.Name] = true
 	}
 
+	for i, sensor := range t.MultiSensor {
+		if err := validateMultiSensor(sensor); err != nil {
+			return fmt.Errorf("invalid multi sensor (#%d): %w", i, err)
+		}
+
+		for _, multiSensorValue := range sensor.Values {
+			if _, exists := sensorNames[multiSensorValue.Name]; exists {
+				return fmt.Errorf("invalid multi sensor (#%d): sensor with this name already exists", i)
+			}
+			sensorNames[multiSensorValue.Name] = true
+		}
+	}
+
 	triggerNames := map[string]bool{}
 	for i, trigger := range t.Trigger {
 		if err := validateTrigger(trigger); err != nil {
@@ -122,6 +154,27 @@ func (t *TopicConfigurations) validate() error {
 func validateSensor(sensor Sensor) error {
 	if sensor.Name == "" {
 		return errors.New("name must not be empty")
+	}
+	if time.Duration(sensor.Interval).Nanoseconds() == 0 {
+		return errors.New("invalid duration")
+	}
+	if err := checkTopicName(sensor.ResultTopic); err != nil {
+		return fmt.Errorf("invalid topic: %w", err)
+	}
+	if sensor.Command.Name == "" {
+		return errors.New("command name must not be empty")
+	}
+	return nil
+}
+
+func validateMultiSensor(sensor MultiSensor) error {
+	for _, multiSensorValue := range sensor.Values {
+		if multiSensorValue.Name == "" {
+			return errors.New("name must not be empty")
+		}
+		if multiSensorValue.Template == "" {
+			return errors.New("template must not be empty")
+		}
 	}
 	if time.Duration(sensor.Interval).Nanoseconds() == 0 {
 		return errors.New("invalid duration")

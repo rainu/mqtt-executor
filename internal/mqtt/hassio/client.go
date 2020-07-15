@@ -27,6 +27,7 @@ type sensorConfig struct {
 
 	StateTopic      string `json:"stat_t"`
 	MeasurementUnit string `json:"unit_of_meas,omitempty"`
+	ValueTemplate   string `json:"value_template,omitempty"`
 	ForceUpdate     *bool  `json:"frc_upd,omitempty"`
 }
 
@@ -77,6 +78,15 @@ func (c *Client) PublishDiscoveryConfig(config config.TopicConfigurations) {
 		targetTopic := fmt.Sprintf("%ssensor/%s_%s/config", c.TopicPrefix, c.DeviceId, friendlyName(sensor.Name))
 		payload := c.generatePayloadForSensor(config.Availability, sensor)
 		c.MqttClient.Publish(targetTopic, byte(1), true, payload)
+	}
+
+	//multi sensor
+	for _, sensor := range config.MultiSensor {
+		for _, sensorValue := range sensor.Values {
+			targetTopic := fmt.Sprintf("%ssensor/%s_%s/config", c.TopicPrefix, c.DeviceId, friendlyName(sensorValue.Name))
+			payload := c.generatePayloadForMultiSensor(config.Availability, sensor, sensorValue)
+			c.MqttClient.Publish(targetTopic, byte(1), true, payload)
+		}
 	}
 
 	//trigger
@@ -146,6 +156,30 @@ func (c *Client) generatePayloadForSensor(availability *config.Availability, sen
 		},
 		StateTopic:      sensor.ResultTopic,
 		MeasurementUnit: sensor.Unit,
+		ForceUpdate:     &bTrue,
+	}
+	addAvailability(&conf.generalConfig, availability)
+
+	payload, err := json.Marshal(conf)
+	if err != nil {
+		//the "marshalling" is relatively safe - it should never appear at runtime
+		panic(err)
+	}
+	return payload
+}
+
+func (c *Client) generatePayloadForMultiSensor(availability *config.Availability, sensor config.MultiSensor, sensorValue config.MultiSensorValue) []byte {
+	bTrue := true
+	conf := sensorConfig{
+		generalConfig: generalConfig{
+			Name:     sensorValue.Name,
+			Icon:     sensorValue.Icon,
+			UniqueId: fmt.Sprintf("%s_%s", c.DeviceId, friendlyName(sensorValue.Name)),
+			Device:   c.buildDevice(),
+		},
+		StateTopic:      sensor.ResultTopic,
+		ValueTemplate:   sensorValue.Template,
+		MeasurementUnit: sensorValue.Unit,
 		ForceUpdate:     &bTrue,
 	}
 	addAvailability(&conf.generalConfig, availability)

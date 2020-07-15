@@ -49,6 +49,29 @@ Create a configuration file named "config.json"
         "cat /proc/meminfo | grep MemFree | cut -d\\: -f2 | sed 's/ //g' | grep -o [0-9]*"
       ]
     }
+  }],
+  "multi_sensor": [{
+    "topic": "tele/__DEVICE_ID__/stats",
+    "retained": false,
+    "interval": "10s",
+    "command": {
+      "name": "/bin/sh",
+      "arguments": [
+        "echo",
+        "{\"mem\":1, \"cpu\":2}"
+      ]
+    },
+    "values": [{
+        "name": "Memory",
+        "unit": "kB",       //used for hassio
+        "icon": "hass:eye", //used for hassio
+        "template": "{{value_json.mem}}" //used for hassio
+    },{
+        "name": "CPU",
+        "unit": "%",       //used for hassio
+        "icon": "hass:eye", //used for hassio
+        "template": "{{value_json.cpu}}" //used for hassio
+    }]
   }]
 }
 ```
@@ -104,7 +127,7 @@ Read the trigger result (command's output):
 mosquitto_sub -t cmnd/touch/file/RESULT
 ```
 
-## Get the sensor results
+## Get the (multi) sensor results
 
 Read the trigger state:
 ```bash
