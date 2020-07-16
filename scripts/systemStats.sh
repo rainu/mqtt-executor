@@ -5,6 +5,7 @@ CPU_STATS=$(mpstat -P ALL | grep "^[0-9]" | grep -v "CPU" | sed 's/,/./g' | awk 
 IO_STATS=$(iostat -d -k | grep "[0-9]$" | sed 's/,/./g' | awk '{print "\""$1"\":{\"tps\":"$2",\"read/s\":"$3",\"wrtn/s\":"$4",\"read\":"$5",\"wrtn\":"$6"},"}' | tr -d '\n' | sed 's/,$//')
 DISK_STATS=$(df -P | grep -v "^tmpfs" | grep -v "^shm" | grep -v "^run" | grep -v "^dev" | sed 1d | awk '{print "\""$6"\":{\"fs\":\""$1"\",\"used\":"$3",\"free\":"$4",\"total\":"$3+$4"},"}' | tr -d '\n' | sed 's/,$//')
 NETWORK_STATS=$(ifstat -j | sed 's/^{//' | sed 's/}$//')
+LOAD_AVG=$(uptime | grep -o "load average: .*$" | cut -d\: -f2 | sed 's/, / /g' | sed 's/,/./g' | awk '{print $1", "$2", "$3}')
 
 read -d '' JSON << EOF
 {
@@ -23,7 +24,8 @@ read -d '' JSON << EOF
     },
     "net": {
         ${NETWORK_STATS}
-    }
+    },
+    "load": [${LOAD_AVG}]
 }
 EOF
 
