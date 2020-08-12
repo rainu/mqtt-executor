@@ -5,6 +5,7 @@ import (
 	"errors"
 	"go.uber.org/zap"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 )
@@ -35,6 +36,11 @@ func (c *CommandExecutor) ExecuteCommandWithContext(cmd string, args []string, e
 
 	command := exec.CommandContext(ctx, cmd, args...)
 	out, execErr := command.CombinedOutput()
+
+	if len(out) > 0 {
+		//trim combined output
+		out = []byte(strings.Trim(string(out), " \n"))
+	}
 
 	if execErr != nil && ctx.Err() == nil {
 		zap.L().Error("Command execution failed.", zap.Error(execErr))
