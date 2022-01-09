@@ -1,0 +1,22 @@
+archives:
+  - format: binary
+
+dist: build/dist
+
+builds:
+
+  - main: ./cmd/mqtt-executor/
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    goarm:
+      - 7
+    flags:
+      - -trimpath
+snapshot:
+  name_template: "{{ .Tag }}-SNAPSHOT-{{.ShortCommit}}"
+release:
+  disable: false
