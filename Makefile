@@ -18,6 +18,10 @@ MAIN_GO=main.go
 BINARY_NAME=mqtt-executor
 DOCKER_REGISTRY=eloo
 
+.PHONY: init
+init:
+	git config core.hooksPath .githooks
+
 .PHONY: clean
 clean:
 	@rm -rf ${BUILD_DIR} || true
