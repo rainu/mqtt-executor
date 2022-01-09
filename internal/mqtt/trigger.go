@@ -3,13 +3,14 @@ package mqtt
 import (
 	"context"
 	"fmt"
-	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"github.com/rainu/mqtt-executor/internal/cmd"
-	"github.com/rainu/mqtt-executor/internal/mqtt/config"
-	"go.uber.org/zap"
 	"strings"
 	"sync"
 	"time"
+
+	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"github.com/eloo/mqtt-executor/internal/cmd"
+	"github.com/eloo/mqtt-executor/internal/mqtt/config"
+	"go.uber.org/zap"
 )
 
 const (

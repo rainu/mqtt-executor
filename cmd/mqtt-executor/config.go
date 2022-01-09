@@ -6,7 +6,7 @@ import (
 
 	"github.com/denisbrodbeck/machineid"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
-	internalConf "github.com/rainu/mqtt-executor/internal/mqtt/config"
+	internalConf "github.com/eloo/mqtt-executor/internal/mqtt/config"
 	"go.uber.org/zap"
 )
 

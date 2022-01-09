@@ -3,10 +3,11 @@ package mqtt
 import (
 	"context"
 	"errors"
-	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"github.com/rainu/mqtt-executor/internal/mqtt/config"
 	"sync"
 	"time"
+
+	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"github.com/eloo/mqtt-executor/internal/mqtt/config"
 )
 
 type StatusWorker struct {

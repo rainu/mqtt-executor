@@ -1,6 +1,6 @@
 # mqtt-executor
 
-![Go](https://github.com/rainu/mqtt-executor/workflows/Go/badge.svg)
+![Go](https://github.com/eloo/mqtt-executor/workflows/Go/badge.svg)
 
 A simple MQTT client written in go that subscribes to a configurable list of MQTT topics on the specified broker and 
 executes a given shell script/command whenever a message arrives. Furthermore you can define commands that are executed 
@@ -13,7 +13,7 @@ You can build it on your own (you will need [golang](https://golang.org/) instal
 go build -a -installsuffix cgo ./cmd/mqtt-executor/
 ```
 
-Or you can download the release binaries: [here](https://github.com/rainu/mqtt-executor/releases/latest)
+Or you can download the release binaries: [here](https://github.com/eloo/mqtt-executor/releases/latest)
 
 # Configuration
 Create a configuration file named "config.json"
@@ -21,7 +21,6 @@ Create a configuration file named "config.json"
 {
   "availability": {
     "topic": "tele/__DEVICE_ID__/status",
-    "interval": "10s",
     "payload": {
       "available": "On",
       "unavailable": "Off"

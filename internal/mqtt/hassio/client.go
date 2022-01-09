@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"github.com/rainu/mqtt-executor/internal/mqtt"
-	"github.com/rainu/mqtt-executor/internal/mqtt/config"
+	"github.com/eloo/mqtt-executor/internal/mqtt"
+	"github.com/eloo/mqtt-executor/internal/mqtt/config"
 	"go.uber.org/zap"
 )
 
@@ -116,7 +116,7 @@ func (c *Client) buildDevice() device {
 	return device{
 		Name:         c.DeviceName,
 		Ids:          []string{c.DeviceId},
-		Manufacturer: "rainu",
+		Manufacturer: "eloo",
 		Model:        runtime.GOOS,
 		Version:      "mqtt-executor",
 	}

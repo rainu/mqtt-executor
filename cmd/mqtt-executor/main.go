@@ -8,9 +8,9 @@ import (
 	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"github.com/rainu/mqtt-executor/internal/cmd"
-	"github.com/rainu/mqtt-executor/internal/mqtt"
-	"github.com/rainu/mqtt-executor/internal/mqtt/hassio"
+	"github.com/eloo/mqtt-executor/internal/cmd"
+	"github.com/eloo/mqtt-executor/internal/mqtt"
+	"github.com/eloo/mqtt-executor/internal/mqtt/hassio"
 	"go.uber.org/zap"
 )
 

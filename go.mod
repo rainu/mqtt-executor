@@ -1,4 +1,4 @@
-module github.com/rainu/mqtt-executor
+module github.com/eloo/mqtt-executor
 
 go 1.17
 
