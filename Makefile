@@ -40,6 +40,8 @@ update-deps:
 download-tools:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin
 	curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh -s -- -b $(shell go env GOPATH)/bin
+	curl -sfL https://install.goreleaser.com/github.com/caarlos0/svu.sh | sh -s -- -b $(shell go env GOPATH)/bin
+
 	make tidy
 
 .PHONY: build
@@ -64,3 +66,15 @@ tidy:
 
 help: ## Prints usage help for this makefile
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = "(:|: .*?## )"}; {printf "\033[36m%-30s\033[0m %s\n", $$(NF-1), $$(NF)}'
+
+.PHONY: bump-patch
+bump-patch:
+	svu next --force-patch-increment | tee > VERSION
+	git tag $$(cat VERSION)
+	git push --tags
+
+.PHONY: bump-minor
+bump-minor:
+	svu minor | tee > VERSION
+	git tag $$(cat VERSION)
+	git push origin $$(cat VERSION)
