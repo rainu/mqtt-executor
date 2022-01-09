@@ -1,0 +1,33 @@
+{
+    "availability": {
+      "topic": "tele/__DEVICE_ID__/status",
+      "payload": {
+        "available": "On",
+        "unavailable": "Off"
+      }
+    },
+    "trigger": [{
+      "name": "Run Filebot",
+      "topic": "cmnd/filebot/run",
+      "command": {
+        "name": "/usr/local/bin/docker-compose",
+        "arguments": ["-f", "/home/joseph/docker/filebot/docker-compose.yml", "up"]
+      }
+    }],
+    "sensor": [{
+      "name": "Free Memory",
+      "topic": "tele/__DEVICE_ID__/memory/free",
+      "retained": false,
+      "unit": "kB",
+      "icon": "hass:eye",
+      "interval": "10s",
+      "command": {
+        "name": "/bin/sh",
+        "arguments": [
+          "-c",
+          "cat /proc/meminfo | grep MemFree | cut -d\\: -f2 | sed 's/ //g' | grep -o [0-9]*"
+        ]
+      }
+    }]
+  }
+  
