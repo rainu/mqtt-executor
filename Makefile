@@ -5,10 +5,6 @@ ifneq ("$(wildcard ./.env)","")
   include .env
 endif
 
-# Build metadata
-BUILD_DATE		:=	$(shell date +%Y-%m-%d\ %H:%M)
-GIT_REF			:=	$(shell git rev-parse --abbrev-ref HEAD)
-
 # Directories
 BUILD_DIR 			:= build
 BIN_DIR 			:= ${BUILD_DIR}/bin
