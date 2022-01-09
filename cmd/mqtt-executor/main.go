@@ -1,16 +1,17 @@
 package main
 
 import (
-	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"github.com/rainu/mqtt-executor/internal/cmd"
-	"github.com/rainu/mqtt-executor/internal/mqtt"
-	"github.com/rainu/mqtt-executor/internal/mqtt/hassio"
-	"go.uber.org/zap"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
+
+	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"github.com/rainu/mqtt-executor/internal/cmd"
+	"github.com/rainu/mqtt-executor/internal/mqtt"
+	"github.com/rainu/mqtt-executor/internal/mqtt/hassio"
+	"go.uber.org/zap"
 )
 
 var commandExecutor *cmd.CommandExecutor

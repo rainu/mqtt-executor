@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+
 	"github.com/denisbrodbeck/machineid"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	internalConf "github.com/rainu/mqtt-executor/internal/mqtt/config"
@@ -18,6 +19,7 @@ type applicationConfig struct {
 	ClientId     *string
 	DeviceName   *string
 	DeviceId     *string
+	Debug        *bool
 
 	HomeassistantEnable *bool
 	HomeassistantTopic  *string
@@ -44,11 +46,13 @@ func LoadConfig() {
 		DeviceName:   flag.String("device-name", fmt.Sprintf("MQTTExecutor - %s", deviceId), "The name of this device (optional)"),
 		DeviceId:     flag.String("device-id", deviceId, "A unique device id (optional)"),
 
+		Debug:               flag.Bool("debug", false, "Enable debug output"),
 		HomeassistantEnable: flag.Bool("home-assistant", false, "Enable home assistant support (optional)"),
 		HomeassistantTopic:  flag.String("ha-discovery-prefix", "homeassistant/", "The mqtt topic prefix for homeassistant's discovery (optional)"),
 		TopicConfigFile:     flag.String("config", "./config.json", "The topic configuration file"),
 	}
 	flag.Parse()
+	lateInitLogging(&Config)
 
 	if *Config.Broker == "" {
 		zap.L().Fatal("Broker is missing!")
