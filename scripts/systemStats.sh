@@ -39,7 +39,7 @@ while getopts 'acmidnl' OPTION; do
 done
 
 if [ $PRINT_MEMORY -eq 1 ]; then
-  MEMORY_STATS=$(cat /proc/meminfo | sed 's/://g' | awk '{ print "\""$1"\":{\"value\":"$2",\"unit\":\""$3"\"},"}' | tr -d '\n' | sed 's/,$//')
+  MEMORY_STATS=$(free | tail -2 | head -1 | awk '{print "\"total\":"$2",\"used\":"$3",\"free\":"$4",\"shared\":"$5",\"buff/cache\":"$6",\"available\":"$7""}')
 fi
 
 if [ $PRINT_IO -eq 1 ]; then
