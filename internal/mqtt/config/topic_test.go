@@ -43,7 +43,6 @@ func TestLoadTopicConfiguration(t *testing.T) {
 						Available:   "ON",
 						Unavailable: "OFF",
 					},
-					Interval: interval(13 * time.Second),
 				},
 			},
 		},
@@ -60,7 +59,6 @@ func TestLoadTopicConfiguration(t *testing.T) {
 						Available:   "Online",
 						Unavailable: "Offline",
 					},
-					Interval: interval(30 * time.Second),
 				},
 			},
 		},
@@ -73,11 +71,6 @@ func TestLoadTopicConfiguration(t *testing.T) {
 			name:          "Availability empty topic",
 			content:       `{ "availability": { "topic": "" } }`,
 			expectedError: "invalid config: invalid availability topic: must not be empty",
-		},
-		{
-			name:          "Availability invalid interval",
-			content:       `{ "availability": { "topic": "test", "interval": "t" } }`,
-			expectedError: "could not read topic configuration file: invalid interval: time: invalid duration t",
 		},
 		{
 			name: "Sensor",
@@ -95,15 +88,17 @@ func TestLoadTopicConfiguration(t *testing.T) {
 				}]
 			}`, expectedResult: TopicConfigurations{
 				Sensor: []Sensor{{
-					Name:        "My sweat sensor",
-					ResultTopic: fmt.Sprintf("tele/%s/status", deviceId),
-					Interval:    *interval(13 * time.Second),
-					Unit:        "kWh",
-					Icon:        "hassio-icon",
-					Command: Command{
-						Name:      "/usr/bin/bash",
-						Arguments: []string{"echo"},
+					GeneralSensor: GeneralSensor{
+						ResultTopic: fmt.Sprintf("tele/%s/status", deviceId),
+						Interval:    *interval(13 * time.Second),
+						Command: Command{
+							Name:      "/usr/bin/bash",
+							Arguments: []string{"echo"},
+						},
 					},
+					Name: "My sweat sensor",
+					Unit: "kWh",
+					Icon: "hassio-icon",
 				}},
 			},
 		},
