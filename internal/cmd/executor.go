@@ -69,6 +69,9 @@ func (c *CommandExecutor) releaseContext(ctx context.Context) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
+	//call the cancel func for the given context to release the resources
+	c.usedContext[ctx]()
+
 	delete(c.usedContext, ctx)
 }
 

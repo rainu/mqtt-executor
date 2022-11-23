@@ -134,6 +134,9 @@ func (t *Trigger) unregisterCommand(trigger config.Trigger) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
+	//call the cancel func to release the resources
+	t.runningCommands[trigger.Name]()
+
 	delete(t.runningCommands, trigger.Name)
 }
 
