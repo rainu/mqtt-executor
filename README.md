@@ -21,7 +21,6 @@ Create a configuration file named "config.json"
 {
   "availability": {
     "topic": "tele/__DEVICE_ID__/status",
-    "interval": "10s",
     "payload": {
       "available": "On",
       "unavailable": "Off"
